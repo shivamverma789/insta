@@ -27,13 +27,28 @@ router.get('/feed',isLoggedIn, async function(req, res) {
   }); 
 
 router.get('/profile',isLoggedIn,async function(req, res) {
-  // console.log(req.session.passport.user);
   const user = await userModel.findOne({username: req.session.passport.user}).populate("posts");
-  res.render('profile', {footer: true,user});
+  var edit = true;
+  res.render('profile', {footer: true,user,edit});
+  
 });
 
-router.get('/search',isLoggedIn, function(req, res) {
-  res.render('search', {footer: true});
+
+router.get('/profile/:user',isLoggedIn,async function(req, res) {
+  const user = await userModel.findOne({username: req.params.user}).populate("posts");
+  const visitor = await userModel.findOne({username: req.session.passport.user});
+  var edit = true;
+  if(visitor.username !== user.username){
+     edit = false; 
+  }
+  console.log(edit);
+  res.render('profile', {footer: true,user,edit});
+});
+
+router.get('/search',isLoggedIn,async function(req, res) {
+  const user = await userModel.findOne({username: req.session.passport.user}).populate("posts");
+
+  res.render('search', {footer: true,user});
 });
 
 router.get('/like/post/:id',isLoggedIn, async function(req, res) {
@@ -55,13 +70,13 @@ router.get('/like/post/:id',isLoggedIn, async function(req, res) {
 });
 
 router.get('/edit',isLoggedIn, async function(req, res) {
-  console.log(req.session.passport.user);
   const user = await userModel.findOne({username: req.session.passport.user}); //already joh data hai voh show karege
   res.render('edit', {footer: true, user});
 });
 
-router.get('/upload',isLoggedIn, function(req, res) {
-  res.render('upload', {footer: true});
+router.get('/upload',isLoggedIn,async function(req, res) {
+  const user = await userModel.findOne({username: req.session.passport.user}).populate("posts");
+  res.render('upload', {footer: true,user});
 });
 
 router.get("/username/:username",isLoggedIn, async function(req, res) {
@@ -76,19 +91,20 @@ const userData =new userModel({
   name:req.body.name,
   email:req.body.email
 });
-  console.log(userData); 
+  // console.log(userData); 
   userModel.register(userData,req.body.password)
   .then(function(){
     passport.authenticate("local")(req,res,function(){
-      res.redirect("/profile");
+      res.redirect(`/profile/${username}`);
     })
   })
 });
 
 router.post('/login', passport.authenticate("local",{
-  successRedirect:"/profile",
+  successRedirect:`/profile`,
   failureRedirect: "/login"
 }),function(req, res) {
+  // console.log(req.body);
   res.render('upload', {footer: true});
 });
 
@@ -100,7 +116,6 @@ router.get('/logout',function(req, res) {
 });
 
 router.post("/update",upload.single('image'),async function(req,res){
-  console.log (req.file);
   const user = await userModel.findOneAndUpdate(
     {username: req.session.passport.user}, //voh banda mil jayega jiska db change hoga
     {username: req.body.username, name:req.body.name, bio:req.body.bio}, //data update kiya hai 
