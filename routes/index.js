@@ -85,6 +85,10 @@ router.get("/username/:username",isLoggedIn, async function(req, res) {
   res.json(users);
 });
 
+router.get('/coming-soon', function(req, res) {
+  res.render('coming_soon', {footer: true});
+});
+
 router.post("/register",function(req,res,next){
 const userData =new userModel({
   username: req.body.username,
@@ -95,7 +99,7 @@ const userData =new userModel({
   userModel.register(userData,req.body.password)
   .then(function(){
     passport.authenticate("local")(req,res,function(){
-      res.redirect(`/profile/${username}`);
+      res.redirect(`/profile`);
     })
   })
 });
@@ -130,6 +134,7 @@ router.post("/update",upload.single('image'),async function(req,res){
 })
 
 router.post("/upload",isLoggedIn,upload.single("image"),async function(req,res){
+  // console.log(req.file.filename);
   const user = await userModel.findOne({username: req.session.passport.user}); //already loggedin banda show karege
   const post = await postModel.create({
     picture:req.file.filename,
